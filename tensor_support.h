@@ -12,6 +12,36 @@
 namespace tensor_impl {
 
 /**
+ * Functor to perform assignement, addition, subtraction, multiplication, division and module
+ */
+
+/// Assign.
+template <typename T>
+struct assign { void operator() (T& a, T& b) { a = b; } };
+
+/// Sum.
+template <typename T>
+struct sum { void operator() (T& a, T& b) { a += b; } };
+
+/// Sub.
+template <typename T>
+struct sub { void operator() (T& a, T& b) { a -= b; } };
+
+/// Mul.
+template <typename T>
+struct mul { void operator() (T& a, T& b) { a *= b; } };
+
+/// Div.
+template <typename T>
+struct div { void operator() (T& a, T& b) { a /= b; } };
+
+/// Mod.
+template <typename T>
+struct mod { void operator() (T& a, T& b) { a %= b; } };
+
+///----------------------------------------------------------------------------///
+
+/**
  * @brief calc_strides. Calculate the offset between elements for each dimension
  *                      in flat representiation
  * @param exts
@@ -63,7 +93,7 @@ _slice_dim(std::size_t offset, const Tensor_slice<N>& src, Tensor_slice<N - 1>& 
 
     for (std::size_t i = N; i > 0; --i)
         if (i - 1 == D)
-            dst.start = src.strides[i - 1] * offset;
+            dst.start += src.strides[i - 1] * offset;
         else {
             dst.extents[j] = src.extents[i - 1];
             dst.strides[j] = src.strides[i - 1];

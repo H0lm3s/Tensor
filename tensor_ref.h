@@ -141,6 +141,10 @@ public:
         return *this;
     }
 
+    /**
+     * @brief data.
+     * @return a pointer to the first element
+     */
     T*
     data()
     { return _elems; }
@@ -232,7 +236,8 @@ public:
      */
     reference
     operator* ()
-    { return *(_data_ptr + _desc.flat_index(_pos)); }
+    { auto d = _desc.flat_index(_pos);
+        return *(_data_ptr + _desc.flat_index(_pos)); }
 
     /**
      * @brief operator !=.

@@ -106,7 +106,7 @@ struct Tensor_slice {
               typename = Enable_if<NN == 2>>
     std::size_t
     operator()(std::size_t i, std::size_t j) const
-    { return i * strides[0] + j; }
+    { return i * strides[0] + j * strides[1] + start; }
 
     /**
      * @brief operator () overload. Applyed only in vector.
@@ -118,7 +118,7 @@ struct Tensor_slice {
               typename = Enable_if<NN == 1>>
     std::size_t
     operator()(std::size_t i) const
-    { return i; }
+    { return i * strides[0] + start; }
 
     /**
      * @brief flat_index. As operator () but passing
@@ -130,7 +130,7 @@ struct Tensor_slice {
     flat_index(const std::array<std::size_t, N>& i) const
     {
         assert(i.size() == N);
-        return start + std::inner_product(
+        return std::inner_product(
                     i.begin(),
                     i.end(),
                     strides.begin(),
