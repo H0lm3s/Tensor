@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "tensor_base.h"
-#include "tensor_ref.h"
+#include "tensor_f_decl.h"
 #include "tensor_initializer.h"
 
 
@@ -21,35 +21,58 @@ public:
     using const_iterator = typename std::vector<T>::const_iterator;
 
     /// Default ctors.
-    Tensor(Tensor_initializer<T, N> &t_init) = default;
+    Tensor() = default;
     Tensor(Tensor&&) = default;
     Tensor& operator=(Tensor&&) = default;
     Tensor(const Tensor&) = default;
     Tensor& operator=(const Tensor&) = default;
     ~Tensor() = default;
 
-    /// Ctors and assignement.
+    /// Ctor from Tensor_ref
     template <typename U>
     Tensor(const Tensor_ref<U, N>& t_ref)
-    {
-    }
+        : Tensor_base<T, N> (t_ref.descriptor()),
+          _elems(t_ref.begin(), t_ref.end())
+    { static_assert (Convertible<U, T>(),
+                     "Tensor constructor: types mismatch"); }
 
+    /// Assignement ctro from Tensor_ref
     template <typename U>
     Tensor& operator= (const Tensor_ref<U, N>& t_ref)
     {
+        this->_desc = t_ref.descriptor();
+        _elems.assign(t_ref.begin(), t_ref.end());
+        return *this;
     }
 
+    /// Ctor by passing extents
     template <typename... Exts>
     explicit Tensor(Exts... exts)
-    {
-    }
+        : Tensor_base<T, N> (exts...),
+          _elems(this->_desc.size)
+    {}
 
+    /// Ctor from Tensor_initializer
     Tensor(Tensor_initializer<T, N> t_init)
     {
+        this->_desc.extents = tensor_impl::_derive_extents<N>(t_init);
+        this->_desc.size = tensor_impl::_calc_strides(this->_desc.extents,
+                                                      this->_desc.strides);
+        _elems.reserve(this->_desc.size);
+        tensor_impl::_insert_flat(t_init, _elems);
+        assert(_elems.size() == this->_desc.size);
     }
 
-    Tensor& operator=(Tensor_initializer<T, N> init)
+    /// Assignement ctor from Tensor_initializer
+    Tensor& operator=(Tensor_initializer<T, N> t_init)
     {
+        this->_desc.extents = tensor_impl::_derive_extents<N>(t_init);
+        this->_desc.size = tensor_impl::_calc_strides(this->_desc.extents,
+                                                      this->_desc.strides);
+        _elems.clear();
+        _elems.reserve(this->_desc.size);
+        tensor_impl::_insert_flat(t_init, _elems);
+        assert(_elems.size() == this->_desc.size);
     }
 
     /**
@@ -99,6 +122,8 @@ public:
     Enable_if<tensor_impl::_requesting_element<Args...>(), T&>
     operator()(Args... args)
     {
+        assert(tensor_impl::_check_bounds(this->_desc, args...));
+        return *(_elems.data() + this->_desc(args...));
     }
 
     /// Access to elements (const)
@@ -106,6 +131,8 @@ public:
     Enable_if<tensor_impl::_requesting_element<Args...>(), const T&>
     operator()(Args... args)
     {
+        assert(tensor_impl::_check_bounds(this->_desc, args...));
+        return *(_elems.data() + this->_desc(args...));
     }
 
     /**
@@ -120,7 +147,7 @@ public:
     {
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<0>(i, this->_desc, t_slice);
-        return {this->_desc, t_slice};
+        return { this->_desc, t_slice };
     }
 
     /**
@@ -135,7 +162,7 @@ public:
     {
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<0>(i, this->_desc, t_slice);
-        return {this->_desc, t_slice};
+        return { this->_desc, t_slice };
     }
 
     /**
@@ -150,7 +177,7 @@ public:
     {
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<1>(i, this->_desc, t_slice);
-        return {this->_desc, t_slice};
+        return { this->_desc, t_slice };
     }
 
     /**
@@ -165,7 +192,7 @@ public:
     {
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<1>(i, this->_desc, t_slice);
-        return {this->_desc, t_slice};
+        return { this->_desc, t_slice };
     }
 
     /**
@@ -206,21 +233,6 @@ public:
 
     /**
      * @brief apply. For each element, apply the
-     *        predicate f, by passing a value to it.
-     * @param f
-     * @param value
-     * @return *this.
-     */
-    template <typename F>
-    Tensor& apply(F f, const T& value)
-    {
-        for (auto& x : _elems)
-            f(x, value);
-        return *this;
-    }
-
-    /**
-     * @brief apply. For each element, apply the
      *        predicate f, by passing another tensor.
      * @param f
      * @param value
@@ -239,10 +251,7 @@ public:
      */
     Tensor&
     operator= (const T& value)
-    {
-        this->apply(tensor_impl::assign<T>(), value);
-        return *this;
-    }
+    { return apply([&](T& a) { a = value; }); }
 
     /**
      * @brief operator +=. Sum a and b and put in a.
@@ -251,10 +260,7 @@ public:
      */
     Tensor&
     operator+= (const T& value)
-    {
-        this->apply(tensor_impl::sum<T>(), value);
-        return *this;
-    }
+    { return apply([&](T& a) { a += value; }); }
 
     /**
      * @brief operator -=. Subtract a and b and put in a.
@@ -263,10 +269,7 @@ public:
      */
     Tensor&
     operator-= (const T& value)
-    {
-        this->apply(tensor_impl::sub<T>(), value);
-        return *this;
-    }
+    { return apply([&](T& a) { a -= value; }); }
 
     /**
      * @brief operator *=. Multiplicate a and b and put in a.
@@ -275,10 +278,7 @@ public:
      */
     Tensor&
     operator*= (const T& value)
-    {
-        this->apply(tensor_impl::mul<T>(), value);
-        return *this;
-    }
+    { return apply([&](T& a) { a *= value; }); }
 
     /**
      * @brief operator /=. Divide a and b and put in a.
@@ -287,30 +287,28 @@ public:
      */
     Tensor&
     operator/= (const T& value)
-    {
-        this->apply(tensor_impl::div<T>(), value);
-        return *this;
-    }
+    { return apply([&](T& a) { a /= value; }); }
 
     /**
-     * @brief operator %=. Module a and b and put in a.
+     * @brief operator %=. Module a and b and put
+     *        in a. Just for integers.
      * @param value
      * @return *this
      */
     Tensor&
     operator%= (const T& value)
+    { return apply([&](T& a) { a %= value; }); }
+
+    template <typename M>
+    Enable_if<_tensor_type<M>, Tensor&>
+    operator+= (const M& b)
     {
-        this->apply(tensor_impl::mod<T>(), value);
-        return *this;
     }
 
-//    template <typename M>
-//    Enable_if<Tensor_type<M>, Tensor&>
-//    operator+= (const M& b)
-
-//    template <typename M>
-//    Enable_if<Tensor_type<M>, Tensor&>
-//    operator-= (const M& b)
+    template <typename M>
+    Enable_if<_tensor_type<M>, Tensor&>
+    operator-= (const M& b)
+    {}
 
     /**
      * @brief begin.

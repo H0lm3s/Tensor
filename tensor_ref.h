@@ -7,6 +7,8 @@
 
 #include "tensor_base.h"
 #include "tensor_initializer.h"
+#include "tensor_f_decl.h"
+
 
 template <typename T, std::size_t N>
 class Tensor_iterator;
@@ -46,15 +48,14 @@ public:
           _elems{elems}
     {}
 
-// UNCOMMENT CTOR FROM TENSOR WHEN COMPLETE
-
-//    template <typename U>
-//    Tensor_ref(tensor<U, N>& t)
-//    {
-//        assert(this->desc.extents == t.descriptor().extents);
-//        std::copy(t.begin(), t.end(), begin());
-//        return *this;
-//    }
+    /// ctor. Create Tensor_ref from Tensor.
+    template <typename U>
+    Tensor_ref(Tensor<U, N>& t)
+    {
+        assert(this->desc.extents == t.descriptor().extents);
+        std::copy(t.begin(), t.end(), begin());
+        return *this;
+    }
 
     /**
      * @brief operator ().
@@ -236,8 +237,7 @@ public:
      */
     reference
     operator* ()
-    { auto d = _desc.flat_index(_pos);
-        return *(_data_ptr + _desc.flat_index(_pos)); }
+    { return *(_data_ptr + _desc.flat_index(_pos)); }
 
     /**
      * @brief operator !=.
