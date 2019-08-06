@@ -75,20 +75,20 @@ constexpr bool
 All(bool b, Args... args)
 { return b && All(args...); }
 
-/**
- * @brief Some.
- * @param b
- * @param args
- * @return true if at least one element is true, false otherwise.
- */
-constexpr bool
-Some()
-{ return false; }
+///**
+// * @brief Some.
+// * @param b
+// * @param args
+// * @return true if at least one element is true, false otherwise.
+// */
+//constexpr bool
+//Some()
+//{ return false; }
 
-template <typename... Args>
-constexpr bool
-Some(bool b, Args... args)
-{ return b || Some(args...); }
+//template <typename... Args>
+//constexpr bool
+//Some(bool b, Args... args)
+//{ return b || Some(args...); }
 
 
 #endif // TRAITS_H

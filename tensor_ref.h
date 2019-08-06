@@ -50,10 +50,10 @@ public:
 
     /// ctor. Create Tensor_ref from Tensor.
     template <typename U>
-    Tensor_ref(Tensor<U, N>& t)
+    Tensor_ref& operator=(const Tensor<U, N>& t)
     {
         assert(this->desc.extents == t.descriptor().extents);
-        std::copy(t.begin(), t.end(), begin());
+        std::copy(t.cbegin(), t.cend(), begin());
         return *this;
     }
 
@@ -150,12 +150,20 @@ public:
     data()
     { return _elems; }
 
+    /**
+     * @brief data. (const)
+     * @return a pointer to the first element
+     */
+    T*
+    data() const
+    { return _elems; }
+
     /// Iterators
     /**
      * @brief begin.
      * @return iterator pointing to begin position.
      */
-    iterator begin() const
+    iterator begin()
     { return {_elems, this->_desc}; }
 
     /**
@@ -163,18 +171,18 @@ public:
      * @return iterator pointing to an element
      *         after end position.
      */
-    iterator end() const
+    iterator end()
     { return {_elems, this->_desc, true}; }
 
     /**
-     * @brief cbegin.
+     * @brief begin.
      * @return const_iterator pointing to begin position.
      */
     const_iterator cbegin() const
     { return {_elems, this->_desc}; }
 
     /**
-     * @brief cend.
+     * @brief end.
      * @return const_iterator pointing to an
      *         element after end position.
      */
@@ -198,12 +206,15 @@ class Tensor_ref<T, 0>;
 template<typename T, size_t N>
 class Tensor_iterator {
 
+public:
+
     /// Aliases
+    using value_type = typename std::remove_const<T>::type;
+    using iterator_category = std::input_iterator_tag; /// THIS MUST BE CHANGED
     using pointer = T*;
     using reference = T&;
     using const_reference = const T&;
-
-public:
+    using difference_type = std::ptrdiff_t;
 
     /// Ctor.
     Tensor_iterator(T* t, const Tensor_slice<N>& s, bool end = false)
@@ -277,5 +288,17 @@ inline bool operator!=(const Tensor_iterator<T, N> &a,
                        const Tensor_iterator<T, N> &b)
 { return !(a == b); }
 
+///-----------------------------------------------------------------------------------------------------------///
+/// Debug functions
+
+template <typename T, std::size_t N>
+std::ostream &operator<<(std::ostream &os, const Tensor_ref<T, N> &t) {
+
+    os << "{";
+    for (auto i = t.cbegin(); i != t.cend(); ++i)
+        os << "\n{" << *i << "}\n";
+    os << "}";
+    return os;
+}
 
 #endif // Tensor_ref_H

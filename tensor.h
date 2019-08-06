@@ -32,16 +32,16 @@ public:
     template <typename U>
     Tensor(const Tensor_ref<U, N>& t_ref)
         : Tensor_base<T, N> (t_ref.descriptor()),
-          _elems(t_ref.begin(), t_ref.end())
+          _elems(t_ref.cbegin(), t_ref.cend())
     { static_assert (Convertible<U, T>(),
                      "Tensor constructor: types mismatch"); }
 
-    /// Assignement ctro from Tensor_ref
+    /// Assignement from Tensor_ref
     template <typename U>
     Tensor& operator= (const Tensor_ref<U, N>& t_ref)
     {
         this->_desc = t_ref.descriptor();
-        _elems.assign(t_ref.begin(), t_ref.end());
+        _elems.assign(t_ref.cbegin(), t_ref.cend());
         return *this;
     }
 
@@ -85,8 +85,8 @@ public:
     template <typename U,
               std::size_t NN = N,
               typename = Enable_if<(NN > 1)>,
-              typename = Enable_if<Convertible<U, std::size_t>()>>
-    Tensor(std::initializer_list<U>) = delete;
+    typename = Enable_if<Convertible<U, std::size_t>()>>
+                                                         Tensor(std::initializer_list<U>) = delete;
 
     /**
       * This is not active is N > 1,
@@ -98,8 +98,8 @@ public:
     template <typename U,
               std::size_t NN = N,
               typename = Enable_if<(NN > 1)>,
-              typename = Enable_if<Convertible<U, std::size_t>()>>
-    Tensor& operator= (std::initializer_list<U>) = delete;
+    typename = Enable_if<Convertible<U, std::size_t>()>>
+                                                         Tensor& operator= (std::initializer_list<U>) = delete;
 
     /**
      * @brief data.
@@ -116,6 +116,27 @@ public:
     const T*
     data() const
     { return _elems.data(); }
+
+    /**
+     * @brief slice. Get a slice of a N-dimensional
+     *        structure by a specific dimension.
+     *        Create a new descriptor and return a
+     *        Tensor_ref with N - 1 dimensions.
+     * @param i
+     * @return Tensor_ref<T, N- 1>.
+     */
+    template<std::size_t D>
+    Tensor_ref<T, N - 1>
+    slice(std::size_t i) const
+    {
+        static_assert (D < N, "Tensor_ref<T, N - 1>::Dimension of slice "
+                              "(D) must be lower than N");
+
+        assert(i < this->_desc.extents[D]);
+        Tensor_slice<N - 1> t;
+        tensor_impl::_slice_dim<D>(i, this->_desc, t);
+        return {t, _elems};
+    }
 
     /// Access to elements
     template <typename... Args>
@@ -147,7 +168,7 @@ public:
     {
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<0>(i, this->_desc, t_slice);
-        return { this->_desc, t_slice };
+        return {t_slice, _elems.data()};
     }
 
     /**
@@ -162,7 +183,7 @@ public:
     {
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<0>(i, this->_desc, t_slice);
-        return { this->_desc, t_slice };
+        return {t_slice, _elems.data()};
     }
 
     /**
@@ -177,7 +198,7 @@ public:
     {
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<1>(i, this->_desc, t_slice);
-        return { this->_desc, t_slice };
+        return {t_slice, _elems.data()};
     }
 
     /**
@@ -192,7 +213,7 @@ public:
     {
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<1>(i, this->_desc, t_slice);
-        return { this->_desc, t_slice };
+        return {t_slice, _elems.data()};
     }
 
     /**
@@ -230,19 +251,6 @@ public:
             f(x);
         return *this;
     }
-
-    /**
-     * @brief apply. For each element, apply the
-     *        predicate f, by passing another tensor.
-     * @param f
-     * @param value
-     * @return *this.
-     */
-//    template <typename F, typename M>
-//    Enable_if<Tensor_type<M>, Tensor&>
-//    Tensor& apply(M& m, F f)
-//    {
-//    }
 
     /**
      * @brief operator =. Assign b to a.
@@ -299,16 +307,47 @@ public:
     operator%= (const T& value)
     { return apply([&](T& a) { a %= value; }); }
 
-    template <typename M>
-    Enable_if<_tensor_type<M>, Tensor&>
-    operator+= (const M& b)
+    /**
+     * @brief apply. For each element, apply the
+     *        predicate f, using values of another
+     *        tensor.
+     * @param f
+     * @param value
+     * @return *this.
+     */
+    template <typename F, typename M>
+    Enable_if<_tensor_type<M>(), Tensor&>
+    apply(F f, M& m)
     {
+        assert(this->_desc.extents == m.descriptor().extents);
+        for (auto i = begin(), j = m.cbegin(); i != end(); ++i, ++j)
+            f(*i, *j);
+        return *this;
     }
 
+    /**
+     * @brief operator +=. Add tensor b to a
+     *        and put result to a.
+     * @param b
+     * @return this.
+     */
     template <typename M>
-    Enable_if<_tensor_type<M>, Tensor&>
-    operator-= (const M& b)
-    {}
+    Enable_if<_tensor_type<M>(), Tensor&>
+    operator+= (const M& t)
+    { return apply([&](T &a,
+                   const typename M::value_type& b) { a += b; }, t); }
+
+    /**
+     * @brief operator -=. Subtract tensor b to a
+     *        and put result to a.
+     * @param b
+     * @return this.
+     */
+    template <typename M>
+    Enable_if<_tensor_type<M>(), Tensor&>
+    operator-= (const M& t)
+    { return apply([&](T& a,
+                   const typename M::value_type& b) { a -= b; }, t); }
 
     /**
      * @brief begin.
@@ -345,5 +384,14 @@ private:
     std::vector<T> _elems;
 
 };
+
+template <typename T, std::size_t N>
+std::ostream &operator<<(std::ostream &os, const Tensor<T, N> &t) {
+    os << "{";
+    for (auto i = t.cbegin(); i != t.cend(); ++i)
+        os << "\n{" << *i << "}\n";
+    os << "}";
+    return os;
+}
 
 #endif // TENSOR_H
