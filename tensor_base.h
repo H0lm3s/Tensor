@@ -41,8 +41,16 @@ public:
      * @param exts
      */
     template<typename... Exts>
-    explicit Tensor_base(Exts... exts) :
-        _desc{exts...}
+    explicit Tensor_base(Exts... exts)
+        : _desc{exts...}
+    {}
+
+    /**
+     * @brief Tensor_base ctor from std::array
+     * @param exts.
+     */
+    Tensor_base(const std::array<std::size_t, N>& exts)
+        : _desc{exts}
     {}
 
     /**

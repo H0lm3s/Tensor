@@ -215,5 +215,4 @@ constexpr bool _requesting_element()
 };
 
 
-
 #endif // SUPPORT_H

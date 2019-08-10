@@ -13,4 +13,5 @@ class Tensor_ref;
 template<std::size_t N>
 struct Tensor_slice;
 
+
 #endif // TENSOR_DECL_H

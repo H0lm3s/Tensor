@@ -23,4 +23,5 @@ struct Tensor_init<T, 0>;
 template <typename T, size_t N>
 using Tensor_initializer = typename Tensor_init<T, N>::type;
 
+
 #endif // TENSOR_INITIALIZER_H

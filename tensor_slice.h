@@ -25,6 +25,19 @@ struct Tensor_slice {
     {}
 
     /**
+     * @brief Tensor_slice ctor by passing
+     *        extents as array.
+     * @param exts.
+     */
+    Tensor_slice(const std::array<std::size_t, N>& exts)
+        : start{0},
+          extents(exts)
+    {
+      assert(exts.size() == N);
+      size = tensor_impl::_calc_strides(extents, strides);
+    }
+
+    /**
      * @brief tensor_slice ctor. Pass start point and extents
      * @param s
      * @param exts
@@ -186,5 +199,6 @@ std::ostream &operator<<(std::ostream &os, const Tensor_slice<N> &s) {
        << s.strides << "\nstart: " << s.start;
     return os;
 }
+
 
 #endif // TENSOR_SLICE_H

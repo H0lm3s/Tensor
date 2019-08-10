@@ -64,6 +64,21 @@ public:
      */
     template<typename... Dims>
     Enable_if<tensor_impl::_requesting_element(), reference>
+    operator()(Dims... dims)
+    {
+        static_assert (sizeof... (dims) == N,
+                       "Tensor_ref<T, N>::operator(): dimension mismatch");
+        assert(tensor_impl::_check_bounds(this->_desc, dims...));
+        return *(_elems + this->_desc(dims...));
+    }
+
+    /**
+     * @brief operator () (const).
+     * @param dims
+     * @return the elements indexed by dims.
+     */
+    template<typename... Dims>
+    Enable_if<tensor_impl::_requesting_element(), const_reference>
     operator()(Dims... dims) const
     {
         static_assert (sizeof... (dims) == N,
@@ -127,6 +142,28 @@ public:
     { return row(i); }
 
     /**
+     * @brief operator []. Only in a vector, get i-th value.
+     * @param i
+     * @return const_reference.
+     */
+    template <std::size_t NN = N,
+              typename = Enable_if<NN == 1>>
+    const T&
+    operator[] (std::size_t i) const
+    { return this->operator()(i); }
+
+    /**
+     * @brief operator []. Only in a vector, get i-th value.
+     * @param i
+     * @return reference.
+     */
+    template <std::size_t NN = N,
+              typename = Enable_if<NN == 1>>
+    T&
+    operator[] (std::size_t i)
+    { return this->operator()(i); }
+
+    /**
      * @brief apply. Apply the predicate F
      *        to all value of N-dimensional structure.
      *        Applyied to all specializations.
@@ -141,6 +178,103 @@ public:
             f(*x);
         return *this;
     }
+
+    /**
+     * @brief operator =. Assign b to a.
+     * @param value
+     * @return *this
+     */
+    Tensor_ref&
+    operator= (const T& value)
+    { return apply([&](T& a) { a = value; }); }
+
+    /**
+     * @brief operator +=. Sum a and b and put in a.
+     * @param value
+     * @return *this
+     */
+    Tensor_ref&
+    operator+= (const T& value)
+    { return apply([&](T& a) { a += value; }); }
+
+    /**
+     * @brief operator -=. Subtract a and b and put in a.
+     * @param value
+     * @return *this
+     */
+    Tensor_ref&
+    operator-= (const T& value)
+    { return apply([&](T& a) { a -= value; }); }
+
+    /**
+     * @brief operator *=. Multiplicate a and b and put in a.
+     * @param value
+     * @return *this
+     */
+    Tensor_ref&
+    operator*= (const T& value)
+    { return apply([&](T& a) { a *= value; }); }
+
+    /**
+     * @brief operator /=. Divide a and b and put in a.
+     * @param value
+     * @return *this
+     */
+    Tensor_ref&
+    operator/= (const T& value)
+    { return apply([&](T& a) { a /= value; }); }
+
+    /**
+     * @brief operator %=. Module a and b and put
+     *        in a. Just for integers.
+     * @param value
+     * @return *this
+     */
+    Tensor_ref&
+    operator%= (const T& value)
+    { return apply([&](T& a) { a %= value; }); }
+
+    /**
+     * @brief apply. For each element, apply the
+     *        predicate f, using values of another
+     *        tensor.
+     * @param f
+     * @param value
+     * @return *this.
+     */
+    template <typename F, typename M>
+    Enable_if<_tensor_type<M>(), Tensor_ref&>
+    apply(F f, M& m)
+    {
+        assert(this->_desc.extents == m.descriptor().extents);
+        for (auto i = begin(), j = m.cbegin(); i != end(); ++i, ++j)
+            f(*i, *j);
+        return *this;
+    }
+
+    /**
+     * @brief operator +=. Add tensor b to a
+     *        and put result to a.
+     * @param b
+     * @return this.
+     */
+    template <typename M>
+    Enable_if<_tensor_type<M>(), Tensor_ref&>
+    operator+= (const M& t)
+    { return apply([&](T &a,
+                   const typename M::value_type& b) { a += b; }, t); }
+
+    /**
+     * @brief operator -=. Subtract tensor b to a
+     *        and put result to a.
+     * @param b
+     * @return this.
+     */
+    template <typename M>
+    Enable_if<_tensor_type<M>(), Tensor_ref&>
+    operator-= (const M& t)
+    { return apply([&](T& a,
+                   const typename M::value_type& b) { a -= b; }, t); }
 
     /**
      * @brief data.
@@ -201,7 +335,7 @@ class Tensor_ref<T, 0>;
 
 /**
  * @brief The Tensor_iterator class. It's like
- *        a fwd iterator.
+ *        a input iterator.
  */
 template<typename T, size_t N>
 class Tensor_iterator {
@@ -291,14 +425,27 @@ inline bool operator!=(const Tensor_iterator<T, N> &a,
 ///-----------------------------------------------------------------------------------------------------------///
 /// Debug functions
 
-template <typename T, std::size_t N>
-std::ostream &operator<<(std::ostream &os, const Tensor_ref<T, N> &t) {
-
-    os << "{";
-    for (auto i = t.cbegin(); i != t.cend(); ++i)
-        os << "\n{" << *i << "}\n";
+template <typename T>
+std::ostream &operator<<(std::ostream& os, const Tensor_ref<T, 2>& t) {
+    os << "{\n";
+    for (std::size_t i = 0; i < t.rows(); ++i) {
+        os << " { ";
+        for (std::size_t j = 0; j < t.cols() - 1; ++j)
+            os << t(i, j) << ", ";
+        os << t(i, t.cols() - 1) << " }\n";
+    }
     os << "}";
     return os;
 }
+
+template <typename T>
+std::ostream &operator<<(std::ostream& os, const Tensor_ref<T, 1>& t) {
+    os << "{ ";
+    for (std::size_t i = 0; i < t.size() - 1; ++i)
+        os << t(i) << ", ";
+    os << t(t.size() - 1) << " }";
+    return os;
+}
+
 
 #endif // Tensor_ref_H
