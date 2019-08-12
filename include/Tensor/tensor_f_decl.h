@@ -1,8 +1,11 @@
-#ifndef TENSOR_DECL_H
-#define TENSOR_DECL_H
+#ifndef TENSOR_F_DECL_H
+#define TENSOR_F_DECL_H
 
 #include <iostream>
 
+#include "../macros.h"
+
+NUM_BEGIN
 
 template <typename T, std::size_t N>
 class Tensor;
@@ -13,5 +16,6 @@ class Tensor_ref;
 template<std::size_t N>
 struct Tensor_slice;
 
+NUM_END
 
-#endif // TENSOR_DECL_H
+#endif // TENSOR_F_DECL_H

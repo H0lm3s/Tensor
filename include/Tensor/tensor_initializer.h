@@ -3,6 +3,10 @@
 
 #include <iostream>
 
+#include "../macros.h"
+
+NUM_BEGIN
+
 
 /**
  * @brief The tensor_init struct. Recursive struct that contains nested initializer_list
@@ -23,5 +27,6 @@ struct Tensor_init<T, 0>;
 template <typename T, size_t N>
 using Tensor_initializer = typename Tensor_init<T, N>::type;
 
+NUM_END
 
 #endif // TENSOR_INITIALIZER_H

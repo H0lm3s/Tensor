@@ -1,9 +1,13 @@
-#ifndef TRAITS_H
-#define TRAITS_H
+#ifndef TENSOR_TRAITS_H
+#define TENSOR_TRAITS_H
 
 #include <iostream>
 
 #include "tensor_f_decl.h"
+
+#include "../macros.h"
+
+NUM_BEGIN
 
 
 /// Alias of std::enable_if...
@@ -75,20 +79,6 @@ constexpr bool
 All(bool b, Args... args)
 { return b && All(args...); }
 
-///**
-// * @brief Some.
-// * @param b
-// * @param args
-// * @return true if at least one element is true, false otherwise.
-// */
-//constexpr bool
-//Some()
-//{ return false; }
+NUM_END
 
-//template <typename... Args>
-//constexpr bool
-//Some(bool b, Args... args)
-//{ return b || Some(args...); }
-
-
-#endif // TRAITS_H
+#endif // TENSOR_TRAITS_H

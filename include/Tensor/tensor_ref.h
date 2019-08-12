@@ -1,5 +1,5 @@
-#ifndef Tensor_ref_H
-#define Tensor_ref_H
+#ifndef TENSOR_REF_H
+#define TENSOR_REF_H
 
 #include <iostream>
 #include <vector>
@@ -8,6 +8,10 @@
 #include "tensor_base.h"
 #include "tensor_initializer.h"
 #include "tensor_f_decl.h"
+
+#include "../macros.h"
+
+NUM_BEGIN
 
 
 template <typename T, std::size_t N>
@@ -447,5 +451,6 @@ std::ostream &operator<<(std::ostream& os, const Tensor_ref<T, 1>& t) {
     return os;
 }
 
+NUM_END
 
-#endif // Tensor_ref_H
+#endif // TENSOR_REF_H

@@ -5,8 +5,12 @@
 #include <vector>
 
 #include "tensor_base.h"
-#include "tensor_f_decl.h"
 #include "tensor_initializer.h"
+#include "tensor_ref.h"
+
+#include "../macros.h"
+
+NUM_BEGIN
 
 
 template <typename T, std::size_t N>
@@ -454,5 +458,6 @@ std::ostream &operator<<(std::ostream& os, const Tensor<T, 1>& t) {
     return os;
 }
 
+NUM_END
 
 #endif // TENSOR_H

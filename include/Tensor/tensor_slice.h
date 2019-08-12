@@ -8,6 +8,10 @@
 #include "tensor_traits.h"
 #include "tensor_support.h"
 
+#include "../macros.h"
+
+NUM_BEGIN
+
 
 /// Generic N-D tensor
 template <std::size_t N>
@@ -200,5 +204,6 @@ std::ostream &operator<<(std::ostream &os, const Tensor_slice<N> &s) {
     return os;
 }
 
+NUM_END
 
 #endif // TENSOR_SLICE_H

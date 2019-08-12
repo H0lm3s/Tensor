@@ -1,11 +1,15 @@
-#ifndef Tensor_base_H
-#define Tensor_base_H
+#ifndef TENSOR_BASE_H
+#define TENSOR_BASE_H
 
 #include <iostream>
 #include <vector>
 #include <cassert>
 
 #include "tensor_slice.h"
+
+#include "../macros.h"
+
+NUM_BEGIN
 
 
 /*
@@ -118,5 +122,6 @@ std::ostream
     return os;
 }
 
+NUM_END
 
-#endif // Tensor_base_H
+#endif // TENSOR_BASE_H

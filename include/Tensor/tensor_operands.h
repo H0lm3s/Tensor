@@ -6,6 +6,10 @@
 
 #include "tensor_f_decl.h"
 
+#include "../macros.h"
+
+NUM_BEGIN
+
 
 /**
  * @brief operator +. Sum two 2x2
@@ -190,5 +194,6 @@ operator* (const Tensor_ref<T, 2>& a,
     return result;
 }
 
+NUM_END
 
 #endif // TENSOR_OPERANDS_H
