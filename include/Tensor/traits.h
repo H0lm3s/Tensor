@@ -1,5 +1,5 @@
-#ifndef TENSOR_TRAITS_H
-#define TENSOR_TRAITS_H
+#ifndef TRAITS_H
+#define TRAITS_H
 
 #include <iostream>
 
@@ -79,6 +79,67 @@ constexpr bool
 All(bool b, Args... args)
 { return b && All(args...); }
 
+/// CHECKING THE DIMENSION OF A TENSOR/TENSOR_REF
+
+/// Concepts
+template <typename M>
+struct _1d_type {
+
+    template <typename T>
+    static _success<void> check (const Tensor<T, 1>& t);
+
+    template <typename T>
+    static _success<void> check (const Tensor_ref<T, 1>& t);
+
+    static _failure check(...);
+
+    using type = decltype (check(std::declval<M>()));
+};
+
+/// Concepts
+template <typename M>
+struct _2d_type {
+
+    template <typename T>
+    static _success<void> check (const Tensor<T, 2>& t);
+
+    template <typename T>
+    static _success<void> check (const Tensor_ref<T, 2>& t);
+
+    static _failure check(...);
+
+    using type = decltype (check(std::declval<M>()));
+};
+
+/// Struct to check value type T.
+template <typename T>
+struct _1d: _success<typename _1d_type<T>::type>
+{};
+
+/// Struct to check value type T.
+template <typename T>
+struct _2d: _success<typename _2d_type<T>::type>
+{};
+
+/**
+ * @brief _is_1d. Check if T has just 1 dimension.
+ * @return true if it is, false otherwise.
+ */
+template <typename T>
+constexpr bool
+_is_1d()
+{ return _1d<T>::value; }
+
+/**
+ * @brief _is_2d. Check if T has just 2 dimensions.
+ * @return true if it is, false otherwise.
+ */
+template <typename T>
+constexpr bool
+_is_2d()
+{ return _2d<T>::value; }
+
+
 NUM_END
 
-#endif // TENSOR_TRAITS_H
+#endif // TRAITS_H

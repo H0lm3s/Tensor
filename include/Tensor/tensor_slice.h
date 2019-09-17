@@ -5,8 +5,8 @@
 #include <array>
 #include <cassert>
 
-#include "tensor_traits.h"
-#include "tensor_support.h"
+#include "traits.h"
+#include "support.h"
 
 #include "../macros.h"
 
@@ -147,11 +147,11 @@ struct Tensor_slice {
     flat_index(const std::array<std::size_t, N>& i) const
     {
         assert(i.size() == N);
-        return std::inner_product(
-                    i.begin(),
-                    i.end(),
-                    strides.begin(),
-                    size_t {0});
+        return start +
+                std::inner_product(i.begin(),
+                                   i.end(),
+                                   strides.begin(),
+                                   size_t {0});
     }
 
     /// Offset

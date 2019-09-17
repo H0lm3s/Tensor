@@ -42,9 +42,21 @@ public:
     /// Default ctor.
     Tensor_ref(Tensor_ref&&) = default;
     Tensor_ref(const Tensor_ref&) = default;
-    Tensor_ref& operator=(Tensor_ref&) = default;
-    Tensor_ref& operator=(const Tensor_ref&) = default;
     ~Tensor_ref() = default;
+
+    /// assignement
+    Tensor_ref& operator=(Tensor_ref& t) {
+        assert(this->_desc.extents == t.descriptor().extents);
+        std::copy(t.begin(), t.end(), begin());
+        return *this;
+    }
+
+    /// assignement const
+    Tensor_ref& operator=(const Tensor_ref& t) {
+        assert(this->_desc.extents == t.descriptor().extents);
+        std::copy(t.cbegin(), t.cend(), begin());
+        return *this;
+    }
 
     /// ctor with param
     Tensor_ref(const Tensor_slice<N>& desc, pointer elems)
@@ -56,7 +68,7 @@ public:
     template <typename U>
     Tensor_ref& operator=(const Tensor<U, N>& t)
     {
-        assert(this->desc.extents == t.descriptor().extents);
+        assert(this->_desc.extents == t.descriptor().extents);
         std::copy(t.cbegin(), t.cend(), begin());
         return *this;
     }
@@ -349,10 +361,10 @@ public:
     /// Aliases
     using value_type = typename std::remove_const<T>::type;
     using iterator_category = std::input_iterator_tag; /// THIS MUST BE CHANGED
+    using difference_type = std::ptrdiff_t;
     using pointer = T*;
     using reference = T&;
     using const_reference = const T&;
-    using difference_type = std::ptrdiff_t;
 
     /// Ctor.
     Tensor_iterator(T* t, const Tensor_slice<N>& s, bool end = false)
@@ -367,17 +379,47 @@ public:
     }
 
     /**
-     * @brief operator ++. Make sequentially increment
+     * @brief descriptor. Get the descriptor.
+     * @return const reference to Tensor_slice<N>
+     */
+    const Tensor_slice<N>&
+    descriptor() const
+    { return _desc; }
+
+    /**
+     * @brief operator ++ (pre-increment). Make sequentially increment
      * @return *this
      */
     Tensor_iterator& operator++() {
-        for (std::size_t i = N; i != 0; --i) {
-            if (++_pos[i - 1] < _desc.extents[i - 1])
-                return *this;
-            _pos[i - 1] = 0;
+
+        std::size_t d = N - 1;
+
+        while (true) {
+          _data_ptr += _desc.strides[d];
+          ++_pos[d];
+
+          if (_pos[d] != _desc.extents[d]) break;
+
+          if (d != 0) {
+            _data_ptr -= _desc.strides[d] * _desc.extents[d];
+            _pos[d] = 0;
+            --d;
+          } else {
+            break;
+          }
         }
-        _pos[0] = _desc.extents[0];
         return *this;
+
+    }
+
+    /**
+     * @brief operator ++ (post-increment). Make sequentially increment
+     * @return *this
+     */
+    Tensor_iterator operator++(int) {
+        Tensor_iterator tmp(*this);
+        ++*this;
+        return tmp;
     }
 
     /**
@@ -385,17 +427,16 @@ public:
      * @return a reference to the element.
      */
     reference
-    operator* ()
-    { return *(_data_ptr + _desc.flat_index(_pos)); }
+    operator*()
+    { return *_data_ptr; }
 
     /**
-     * @brief operator !=.
-     * @param t
-     * @return true if they are the same or false otherwise.
+     * @brief const operator *. To get the pointed-to.
+     * @return a const_reference to the element.
      */
-    bool
-    operator!= (const Tensor_iterator<T, N>& t) const
-    { return _pos != t._pos; }
+    const_reference
+    operator*() const
+    { return *_data_ptr; }
 
 private:
 
@@ -414,16 +455,16 @@ private:
 /// Overloading operators
 
 template <typename T, std::size_t N>
-inline bool operator==(const Tensor_iterator<T, N> &a,
-                       const Tensor_iterator<T, N> &b)
+inline bool operator==(const Tensor_iterator<T, N>& a,
+                       const Tensor_iterator<T, N>& b)
 {
     assert(a.descriptor() == b.descriptor());
     return &*a == &*b;
 }
 
 template <typename T, std::size_t N>
-inline bool operator!=(const Tensor_iterator<T, N> &a,
-                       const Tensor_iterator<T, N> &b)
+inline bool operator!=(const Tensor_iterator<T, N>& a,
+                       const Tensor_iterator<T, N>& b)
 { return !(a == b); }
 
 ///-----------------------------------------------------------------------------------------------------------///

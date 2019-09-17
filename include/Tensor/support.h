@@ -1,5 +1,5 @@
-#ifndef TENSOR_SUPPORT_H
-#define TENSOR_SUPPORT_H
+#ifndef SUPPORT_H
+#define SUPPORT_H
 
 #include <iostream>
 #include <numeric>
@@ -7,7 +7,7 @@
 #include <cassert>
 
 #include "tensor_f_decl.h"
-#include "tensor_traits.h"
+#include "traits.h"
 
 #include "../macros.h"
 
@@ -219,4 +219,4 @@ constexpr bool _requesting_element()
 
 NUM_END
 
-#endif // TENSOR_SUPPORT_H
+#endif // SUPPORT_H

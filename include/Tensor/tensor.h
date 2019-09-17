@@ -193,6 +193,7 @@ public:
     Tensor_ref<T, N - 1>
     row(std::size_t i)
     {
+        assert(i < this->rows());
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<0>(i, this->_desc, t_slice);
         return {t_slice, _elems.data()};
@@ -208,6 +209,7 @@ public:
     const Tensor_ref<const T, N - 1>
     row(std::size_t i) const
     {
+        assert(i < this->rows());
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<0>(i, this->_desc, t_slice);
         return {t_slice, _elems.data()};
@@ -223,6 +225,7 @@ public:
     Tensor_ref<T, N - 1>
     col(std::size_t i)
     {
+        assert(i < this->cols());
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<1>(i, this->_desc, t_slice);
         return {t_slice, _elems.data()};
@@ -238,6 +241,7 @@ public:
     Tensor_ref<const T, N - 1>
     col(std::size_t i) const
     {
+        assert(i < this->cols());
         Tensor_slice<N - 1> t_slice;
         tensor_impl::_slice_dim<1>(i, this->_desc, t_slice);
         return {t_slice, _elems.data()};
@@ -364,7 +368,7 @@ public:
      * @return *this.
      */
     template <typename F, typename M>
-    Enable_if<_tensor_type<M>, Tensor&>
+    Enable_if<_tensor_type<M>(), Tensor&>
     apply(F f, M& m)
     {
         assert(this->_desc.extents == m.descriptor().extents);
@@ -380,7 +384,7 @@ public:
      * @return this.
      */
     template <typename M>
-    Enable_if<_tensor_type<M>, Tensor&>
+    Enable_if<_tensor_type<M>(), Tensor&>
     operator+= (const M& t)
     { return apply([&](T &a,
                    const typename M::value_type& b) { a += b; }, t); }
