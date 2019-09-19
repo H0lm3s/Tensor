@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="http://www.samueleserrago.com/images/portfolio/modals/m-tensor.png">
+</p>
+
 # Tensor
 A simple library written in C++, to make operation with a N-dimensional tensor. Since this library is in development, it's not complete. Some operations are defined only for 1-2 dimensional structures.
 
